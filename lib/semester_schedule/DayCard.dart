@@ -1,22 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:polytechschedule/LecturesInOneDay.dart';
+import 'package:polytechschedule/semester_schedule/LecturesInOneDay.dart';
+import 'package:polytechschedule/work_with_data/LectureClass.dart';
 
 class DayCard extends StatelessWidget{
   var _day;
-  List<Map<String,dynamic>> _test = new List<Map<String,dynamic>>();
-  DayCard(String day){
+  List<LectureClass> _data = new List<LectureClass>();
+
+  DayCard(day, data){
     _day = day;
-    for (int i = 0; i < 5; i++)
-      {
-        _test.add(
-            {
-              "time": "10:40\n     -\n12:10",
-              "subject": "Мобильная разработка приложений на C#.  Аудитория Н-505",
-              "teacher": "Исаев Александр Сергеевич",
-            }
-        );
-      }
+    _data = data;
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +33,7 @@ class DayCard extends StatelessWidget{
               thickness: 5,
             ),
 
-            LecturesInOneDay(_test)
+            LecturesInOneDay(_data)
           ],
         ),
       ),
