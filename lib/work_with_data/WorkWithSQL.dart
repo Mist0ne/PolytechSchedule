@@ -1,50 +1,63 @@
 import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
 import 'package:polytechschedule/work_with_data/LectureClass.dart';
 
 class WorkWithSQL{
-  static AddNewGroup(group) async{
+  static initDB() async {
     try{
-      final Database database = await openDatabase(
-        join(await getDatabasesPath(), 'schedule.db'),
-        onCreate: (db, version) {
-          db.execute(
-            "CREATE TABLE groups(groupNumber TEXT);"
-                "CREATE TABLE lectures(groupNumber TEXT, day TEXT, time TEXT, auditories TEXT, "
-                "subject TEXT, type TEXT, teacher TEXT, dates TEXT);",
-          );
-        },
-        version: 1,
-      );
-      database.insert("groups", {"groupNumber": group});
-
-      database.close();
+      var database = await openDatabase('schedule.db');
+      await database.execute("CREATE TABLE groups(groupNumber TEXT);");
+      await database.execute("CREATE TABLE lectures(groupNumber TEXT, day TEXT, time TEXT, auditories TEXT, subject TEXT, type TEXT, teacher TEXT, dates TEXT);");
     }
-    catch(Exception){
+    catch (Exception) {
       print(Exception);
     }
   }
 
-  static DeleteAllGroups() async{
-    var database = await openDatabase('schedule.db');
+  static AddNewGroup(group) async{
+    try{
+      var database = await openDatabase('schedule.db');
+      database.insert("groups", {"groupNumber": group});
+      database.close();
+    }
+    catch(Exception){
+      print(Exception);
+      await initDB();
+      await AddNewGroup(group);
+    }
+  }
 
-    database.execute("DELETE FROM groups");
-    database.close();
+  static DeleteAllGroups() async{
+    try{
+      var database = await openDatabase('schedule.db');
+      database.execute("DELETE FROM groups");
+      database.close();
+    }
+    catch(Exception){
+      await initDB();
+      print(Exception);
+    }
   }
 
   static GetAllGroups() async{
-    var database = await openDatabase('schedule.db');
-
-    List<Map> dataList = await database.rawQuery('SELECT rowid, groupNumber FROM groups');
-    database.close();
-    return dataList;
+    try{
+      var database = await openDatabase('schedule.db');
+      List<Map> dataList = await database.rawQuery('SELECT rowid, groupNumber FROM groups');
+      database.close();
+      return dataList;
+    }
+    catch(Exception){
+      print(Exception);
+      initDB();
+      return null;
+    }
   }
 
   static GetFirstGroup() async{
-    var database = await openDatabase('schedule.db');
-
-    List<Map> dataList = await database.rawQuery('SELECT rowid, groupNumber FROM groups');
-    database.close();
+    var dataList = await GetAllGroups();
+    if(dataList == null){
+      await initDB();
+      return null;
+    }
     return dataList[0]['groupNumber'];
   }
 
@@ -59,35 +72,61 @@ class WorkWithSQL{
        );
     }
     catch(Exception){
+      await initDB();
       print(Exception);
     }
   }
 
   static DeleteAllSchedule() async{
-    var database = await openDatabase('schedule.db');
-
-    database.execute("DELETE FROM lectures");
-    database.close();
+    try{
+      var database = await openDatabase('schedule.db');
+      database.execute("DELETE FROM lectures");
+      database.close();
+    }
+    catch(Exception){
+      await initDB();
+      print(Exception);
+    }
   }
 
   static GetAllSchedule() async{
     var database = await openDatabase('schedule.db');
 
-    List<Map> dataList = await database.rawQuery('SELECT * FROM lectures');
-    database.close();
-    return dataList;
+    try {
+      List<Map> dataList = await database.rawQuery('SELECT * FROM lectures');
+      database.close();
+      return dataList;
+    }
+    catch (Exception){
+      await initDB();
+      print(Exception);
+    }
+  }
+
+  static GetGroupSchedule(group) async{
+    var database = await openDatabase('schedule.db');
+
+    try{
+      List<Map> dataList = await database.rawQuery('SELECT * FROM lectures where groupNumber = ?', [group]);
+      database.close();
+      return dataList;
+    }
+    catch (Exception){
+      await initDB();
+      print(Exception);
+    }
   }
 
   static DropAllTables() async{
-    var database = await openDatabase('schedule.db');
-    //await database.execute("DROP TABLE groups");
-    //await database.execute("DROP TABLE lectures");
-    await database.execute(
-      "CREATE TABLE groups(groupNumber TEXT);"
-    );
-
-    await database.execute("CREATE TABLE lectures(groupNumber TEXT, day TEXT, time TEXT, auditories TEXT, subject TEXT, type TEXT, teacher TEXT, dates TEXT);"
-    );
-    database.close();
+    try{
+      var database = await openDatabase('schedule.db');
+      await database.execute("DROP TABLE groups");
+      await database.execute("DROP TABLE lectures");
+      database.close();
+    }
+    catch(Exception){
+      await initDB();
+      print(Exception);
+    }
   }
 }

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:polytechschedule/work_with_data/LectureClass.dart';
-import 'package:polytechschedule/work_with_data/WorkWithSQL.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:polytechschedule/work_with_data/ScheduleSQL.dart';
 import 'DayCard.dart';
 import '../CustomDrawer.dart';
-import 'package:polytechschedule/work_with_data/SemesterData.dart';
 
 
 class SemesterScheduleView extends StatefulWidget{
@@ -14,6 +12,8 @@ class SemesterScheduleView extends StatefulWidget{
 
 
 class _SemesterScheduleViewState extends State<SemesterScheduleView>{
+  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+
   Map<String, List<LectureClass>> _data = {
     'Понедельник': [new LectureClass.empty()],
     'Вторник': [new LectureClass.empty()],
@@ -24,35 +24,41 @@ class _SemesterScheduleViewState extends State<SemesterScheduleView>{
   };
 
   _loadData() async{
-    final group = await WorkWithSQL.GetFirstGroup();
-    var data = await SemesterData.getDataFromServer(group);
+    var textForSnackBar = 'Актуальные данные успешно загружены с сервера';
 
-    await WorkWithSQL.DeleteAllSchedule();
-    final database = await openDatabase('schedule.db');
-    await database.transaction((txn) async{
-      data.forEach((k, v) async{
-        for (var i = 0; i < v.length; i++){
-          LectureClass lec = new LectureClass(v[i].subject, v[i].teacher, v[i].dates, v[i].auditories, v[i].type, v[i].time);
-          await WorkWithSQL.AddNewSchedule(txn, group, k, lec);
-        }
+    var data = await ScheduleSQL.loadDataFromServerToDB(null);
+
+    if (data == null) {
+      data = await ScheduleSQL.parseScheduleFromDB(null);
+      textForSnackBar = 'Данные загружены из базы данных из-за проблем с сетью';
+    }
+
+    if (data != null){
+      setState(() {
+        _data = data;
       });
-    });
+    }
 
-    setState(() {
-      _data = data;
-    });
+    if (data == null) {
+      textForSnackBar = 'Не удалось загрузить данные';
+    }
+
+    _scaffoldKey.currentState.showSnackBar(SnackBar(
+      content: Text(textForSnackBar, style: TextStyle(fontSize: 20, color: Colors.white)),
+      backgroundColor: Colors.grey,
+    ));
   }
 
   @override
   void initState(){
     super.initState();
-    WorkWithSQL.GetAllGroups();
     _loadData();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+        key: _scaffoldKey,
         appBar:
         AppBar(
           title: Text('Семестровое расписание'),

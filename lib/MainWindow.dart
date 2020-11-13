@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:polytechschedule/semester_schedule/SemesterSchedule.dart';
+import 'package:polytechschedule/work_with_data/ScheduleSQL.dart';
 import 'session_schedule/SessionSchedule.dart';
 import 'lecturer_schedule/LecturerSchedule.dart';
 import 'CustomDrawer.dart';
@@ -14,7 +15,7 @@ class MainWindow extends StatelessWidget {
   }
 }
 
-//ToDo добавить проверку поля группы
+
 class MyHomePage extends StatefulWidget {
   @override
   _MyHomePageState createState() => _MyHomePageState();
@@ -22,6 +23,28 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final GroupController = TextEditingController();
+
+  _setGroup() async{
+    var text;
+
+    if(GroupController.text.length != 7 || !RegExp(r"\d{3}-\d{3}").hasMatch(GroupController.text)){
+      text = 'Введите номер группы корректно';
+    }
+
+    else{
+      await WorkWithSQL.DeleteAllGroups();
+      await WorkWithSQL.AddNewGroup(GroupController.text);
+      var dataFromServer = await ScheduleSQL.loadDataFromServerToDB(GroupController.text);
+      dataFromServer != null
+          ? text = 'Уже ищу твое расписание..'
+          : text = 'Упс.. Проблемы с интернетом(';
+    }
+
+    Scaffold.of(context).showSnackBar(SnackBar(
+      content: Text(text, style: TextStyle(fontSize: 20, color: Colors.white)),
+      backgroundColor: Colors.grey,
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,11 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     padding: EdgeInsetsDirectional.only(bottom: 30.0),
                     child: TextField(
                       controller: GroupController,
-                      onSubmitted: (String value) async {
-                        await WorkWithSQL.DropAllTables();
-                        await WorkWithSQL.AddNewGroup(GroupController.text);
-                        // await WorkWithSQL.GetAllGroups();
-                      },
+                      onSubmitted: (String value) => _setGroup(),
                       keyboardType: TextInputType.number,
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 20.0),
@@ -63,15 +82,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   RaisedButton(
                     color: Colors.white,
                     child: Text('Найти', style: TextStyle(fontSize: 20.0, color: Colors.black)),
-                    onPressed: () async{
-                      Scaffold.of(context).showSnackBar(SnackBar(
-                      content: Text('Уже ищу твое расписание..', style: TextStyle(fontSize: 20, color: Colors.white)),
-                      backgroundColor: Colors.grey,
-                    ));
-                      await WorkWithSQL.DeleteAllGroups();
-                      await WorkWithSQL.AddNewGroup(GroupController.text);
-                      // await WorkWithSQL.GetAllGroups();
-                    }
+                    onPressed: () => _setGroup()
                   ),
                 ],
               ),
