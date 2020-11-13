@@ -5,6 +5,7 @@ import 'session_schedule/SessionSchedule.dart';
 import 'lecturer_schedule/LecturerSchedule.dart';
 import 'CustomDrawer.dart';
 import 'work_with_data/WorkWithSQL.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 
 class MainWindow extends StatelessWidget {
   @override
@@ -23,6 +24,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final GroupController = TextEditingController();
+  final maskFormatter = new MaskTextInputFormatter(mask: '###-###', filter: { "#": RegExp(r'[0-9]') });
 
   _setGroup() async{
     var text;
@@ -36,7 +38,7 @@ class _MyHomePageState extends State<MyHomePage> {
       await WorkWithSQL.AddNewGroup(GroupController.text);
       var dataFromServer = await ScheduleSQL.loadDataFromServerToDB(GroupController.text);
       dataFromServer != null
-          ? text = 'Уже ищу твое расписание..'
+          ? text = 'Уже нашел твое расписание'
           : text = 'Упс.. Проблемы с интернетом(';
     }
 
@@ -64,6 +66,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     width: MediaQuery.of(context).size.width - 220,
                     padding: EdgeInsetsDirectional.only(bottom: 30.0),
                     child: TextField(
+                      inputFormatters: [maskFormatter],
                       controller: GroupController,
                       onSubmitted: (String value) => _setGroup(),
                       keyboardType: TextInputType.number,
@@ -92,7 +95,9 @@ class _MyHomePageState extends State<MyHomePage> {
               width: 300.0,
               child: RaisedButton(
                 color: Colors.white,
-                onPressed: () {Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (BuildContext context) => SemesterScheduleView()));},
+                onPressed: () {
+                  Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (BuildContext context) => SemesterScheduleView()));
+                  },
                 child: Text('Расписание семестровое', style: TextStyle(fontSize: 20, color: Colors.black)),
               ),
             ),
